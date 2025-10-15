@@ -1,0 +1,7 @@
+# ignore .pyc .npz ,and files in __pycache__ folder and records folder
+__pycache__/
+*.pyc
+*.npz
+*.jsonl
+records/
+

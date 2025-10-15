@@ -1,0 +1,13 @@
+ROWS = 34
+COLS = 10
+MIN_VALID_AD = 120
+LEFT_PORT = 6060    
+RIGHT_PORT = 7070
+# 左右脚设备的默认 IP 地址
+ME_IP = '192.168.0.117'
+LEFT_IP = '192.168.0.170'
+RIGHT_IP = '192.168.0.171'
+
+# 左右脚设备的对端通讯端口（用于发送控制 start/stop）
+LEFT_REMOTE_PORT = 8080
+RIGHT_REMOTE_PORT = 9090

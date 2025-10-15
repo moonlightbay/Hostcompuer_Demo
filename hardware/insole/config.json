@@ -1,0 +1,19 @@
+{
+  "left_csv": "hardware/insole/calibrate_data/Calibratedata_left.csv",
+  "right_csv": "hardware/insole/calibrate_data/Calibratedata_right.csv",
+  "left": {
+    "listen_port": 6060,
+    "remote_port": 8080,
+    "remote_ip": "192.168.0.170"
+  },
+  "right": {
+    "listen_port": 7070,
+    "remote_port": 9090,
+    "remote_ip": "192.168.0.171"
+  },
+  "bind_ip": "0.0.0.0",
+  "ad_threshold": 200,
+  "connect_timeout": 5.0,
+  "auto_stop_seconds": null,
+  "record_dir": "records"
+}
