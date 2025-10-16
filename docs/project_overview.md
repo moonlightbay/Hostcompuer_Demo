@@ -4,13 +4,14 @@
 - 采用事件驱动架构，基于 `bus.event_bus.EventBus` 封装的 `pypubsub` 实现模块间通信，并提供监听调试工具（`list_listeners`、`listener_count` 等）。
 - `bus.topics.Topics` 负责集中定义领域主题，`register_module_topics`/`TOPIC_REGISTRY` 记录各模块的主题元数据；`bus.bus` 作为兼容层仅重新导出上述成员。
 - `hardware` 目录存放硬件模块，每个模块实现 `hardware.iHardware.IHardware` 抽象接口，负责自身线程、资源与状态管理，并通过类属性 `topics` 和 `describe_topics()` 显式声明主题。
-- `utils` 目录存放跨模块复用的通用工具（如 UDP 通信）。
+- `utils` 目录存放跨模块复用的通用工具（如 UDP、BLE 通信）。
 - `main.py` 为正式入口的占位示例；
 - `test_insole.py` 提供鞋垫模块的调试脚本；
+- `test_vibrator.py` 提供震动器模块的蓝牙调试脚本。
 - `script_framework.py` 给出组织多模块运行的脚本模板。
 
 ## 总线主题约定
-- 建议为每个硬件模块保留 `command`、`status`、`data` 三类主题，集中在 `bus.topics.Topics.Hardware.<Module>` 下维护，避免拼接字符串。
+- 建议为每个硬件模块保留 `command`、`status`、`data` 三类主题，集中在 `bus.topics.Topics.Hardware.<Module>` 下维护，避免拼接字符串；震动器示例使用 `Topics.Hardware.Vibrator`。
 - 调用 `register_module_topics()` 在模块加载时登记 `publish`/`subscribe` 说明，结合 `TOPIC_REGISTRY` 生成诊断或文档。
 - 控制层主题建议放在 `Topics.System` 域，例如 `Topics.System.CONTROL`、`Topics.System.SHUTDOWN`。
 - 消息 payload 推荐使用关键字参数传递字典，保证订阅端可选字段。
@@ -40,6 +41,7 @@
 - 运行阶段：
   - 通过发布 `command` 主题控制模块，例如定时自动启动、组合动作等。
   - 根据业务需要订阅 `status`/`data` 主题，实现 UI 展示、日志记录、告警等；可借助 `EventBus.list_listeners()`、`topics_snapshot()` 检查实时订阅情况。
+  - 对于 BLE 硬件，可订阅 `Topics.Hardware.Vibrator.NOTIFY` 等通知主题，及时采集设备回传帧。
 - 停止阶段：
   - 捕获 `SIGINT/SIGTERM`，依次调用模块的 `shutdown()`，并发布 `system.shutdown` 等广播。
   - 如果需要自动停止逻辑，可参考 `test_insole.py` 使用 `threading.Timer` 定时发布 `stop` 指令。

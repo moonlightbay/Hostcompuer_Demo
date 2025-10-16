@@ -23,6 +23,11 @@ class Topics:
             STATUS = "hardware.insole.status"
             DATA = "hardware.insole.data"
 
+        class Vibrator:
+            COMMAND = "hardware.vibrator.command"
+            STATUS = "hardware.vibrator.status"
+            NOTIFY = "hardware.vibrator.notify"
+
     class System:
         CONTROL = "system.control"
         SHUTDOWN = "system.shutdown"

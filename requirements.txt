@@ -1,2 +1,3 @@
+bleak>=0.21.1
 numpy>=1.24.0
 pypubsub>=4.0.3

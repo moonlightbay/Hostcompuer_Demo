@@ -7,7 +7,13 @@ import signal
 import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    # 将项目根目录加入 sys.path，兼容直接运行该脚本的场景
+    sys.path.insert(0, str(ROOT_DIR))
 
 from bus.event_bus import EventBus
 from bus.topics import Topics
