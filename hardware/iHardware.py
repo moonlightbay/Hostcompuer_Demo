@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, ClassVar, Dict, List
 
-from bus.bus import EventBus
+from bus.event_bus import EventBus
 
 
 class IHardware(ABC):
     """所有硬件模块需要遵循的统一接口。"""
+
+    topics: ClassVar[Dict[str, List[str]]] = {"publish": [], "subscribe": []}
 
     def __init__(self, name: str, bus: EventBus):
         self.name = name
@@ -35,4 +37,13 @@ class IHardware(ABC):
     def publish(self, topic: str, **message: Any) -> None:
         """向总线发布消息，供其他模块订阅使用。"""
         self.bus.publish(topic, **message)
+
+    @classmethod
+    def describe_topics(cls) -> Dict[str, List[str]]:
+        """返回模块声明的主题信息，便于统一展示。"""
+
+        return {
+            "publish": list(cls.topics.get("publish", [])),
+            "subscribe": list(cls.topics.get("subscribe", [])),
+        }
 

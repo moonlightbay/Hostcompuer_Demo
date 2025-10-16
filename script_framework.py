@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Iterable, List
 
-from bus.bus import EventBus, Topics
+from bus.event_bus import EventBus
+from bus.topics import Topics
 from hardware.iHardware import IHardware
 from utils.runtime import setup_basic_logging
 
@@ -32,7 +33,7 @@ def register_observers(bus: EventBus) -> None:
     def _status_logger(event: str, **payload) -> None:
         log.info("status event=%s payload=%s", event, payload)
 
-    bus.subscribe(Topics.INSOLE_STATUS, _status_logger)
+    bus.subscribe(Topics.Hardware.Insole.STATUS, _status_logger)
     # 可以根据实际需求继续添加更多订阅者
 
 

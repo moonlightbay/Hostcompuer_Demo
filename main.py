@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from bus.bus import EventBus
+from bus.event_bus import EventBus
 from utils.runtime import setup_basic_logging
 
 

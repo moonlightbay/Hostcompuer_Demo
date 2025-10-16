@@ -9,7 +9,8 @@ import threading
 import time
 from typing import Any
 
-from bus.bus import EventBus, Topics
+from bus.event_bus import EventBus
+from bus.topics import Topics
 from hardware.insole import InsoleModule
 from hardware.insole.runtime import load_config, make_data_logger, make_status_logger
 from utils.runtime import setup_basic_logging
@@ -25,8 +26,9 @@ def main() -> None:
     insole = InsoleModule(bus=bus, config=config, config_root=config_root)
     insole.attach()
 
-    status_sub = bus.subscribe(Topics.INSOLE_STATUS, make_status_logger())
-    data_sub = bus.subscribe(Topics.INSOLE_DATA, make_data_logger())
+    insole_topics = Topics.Hardware.Insole
+    status_sub = bus.subscribe(insole_topics.STATUS, make_status_logger())
+    data_sub = bus.subscribe(insole_topics.DATA, make_data_logger())
 
     timer: threading.Timer | None = None
 
@@ -39,7 +41,7 @@ def main() -> None:
         data_sub.unsubscribe()
         if timer is not None:
             timer.cancel()
-        bus.publish(Topics.INSOLE_COMMAND, action="stop")
+        bus.publish(insole_topics.COMMAND, action="stop")
         insole.shutdown()
         sys.exit(0)
 
@@ -48,13 +50,13 @@ def main() -> None:
         signal.signal(signal.SIGTERM, _shutdown)
 
     log.info("发布启动指令，开始鞋垫数据采集测试")
-    bus.publish(Topics.INSOLE_COMMAND, action="start")
+    bus.publish(insole_topics.COMMAND, action="start")
 
     def delayed_stop() -> None:
         """定时触发的自动停止逻辑，便于演示收尾流程。"""
 
         log.info("自动停止计时器触发，准备停止鞋垫采集")
-        bus.publish(Topics.INSOLE_COMMAND, action="stop")
+        bus.publish(insole_topics.COMMAND, action="stop")
 
     timer = threading.Timer(5.0, delayed_stop)
     timer.daemon = True

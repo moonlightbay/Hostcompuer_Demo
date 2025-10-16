@@ -7,7 +7,8 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from bus.bus import EventBus, Subscription, Topics
+from bus.event_bus import EventBus, Subscription
+from bus.topics import Topics, register_module_topics
 from hardware.iHardware import IHardware
 from utils.communication.udp import UdpReceiver, UdpSender
 
@@ -15,11 +16,18 @@ from .config import InsoleConfig
 from .core.processor import InsoleProcessor, ProcessedFrame
 from .io.logger import DataLogger
 
+InsoleTopics = Topics.Hardware.Insole
+
 LOG = logging.getLogger(__name__)
 
 
 class InsoleModule(IHardware):
     """实现 IHardware 接口的鞋垫模块，实现启动、停止与数据广播。"""
+
+    topics = {
+        "publish": [InsoleTopics.STATUS, InsoleTopics.DATA],
+        "subscribe": [InsoleTopics.COMMAND],
+    }
 
     def __init__(self, bus: EventBus, config: InsoleConfig, *, config_root: Path | None = None) -> None:
         """初始化模块，保存配置并准备数据处理、UDP 管理器等成员。"""
@@ -48,9 +56,9 @@ class InsoleModule(IHardware):
     def attach(self) -> None:
         """在应用启动阶段调用，注册指令监听并广播就绪状态。"""
         LOG.debug("Attaching insole module to bus")
-        sub = self.bus.subscribe(Topics.INSOLE_COMMAND, self._on_bus_command)
+        sub = self.bus.subscribe(InsoleTopics.COMMAND, self._on_bus_command)
         self._subscriptions.append(sub)
-        self.publish(Topics.INSOLE_STATUS, event="ready", payload=None)
+        self.publish(InsoleTopics.STATUS, event="ready", payload=None)
 
     def detach(self) -> None:
         """注销指令监听并释放网络资源。"""
@@ -109,7 +117,7 @@ class InsoleModule(IHardware):
             self._active_config = effective_config
             self._schedule_connection_check(effective_config.connect_timeout)
             self._schedule_auto_stop(effective_config.auto_stop_seconds)
-        self.publish(Topics.INSOLE_STATUS, event="starting", payload=self._session_meta(effective_config))
+        self.publish(InsoleTopics.STATUS, event="starting", payload=self._session_meta(effective_config))
         self._send_command("start")
 
     def stop(self) -> None:
@@ -139,7 +147,7 @@ class InsoleModule(IHardware):
         with self._lock:
             self._active_config = None
         self.connected = False
-        self.publish(Topics.INSOLE_STATUS, event="stopped", payload=None)
+        self.publish(InsoleTopics.STATUS, event="stopped", payload=None)
 
     def reload_calibration(self, payload: Dict[str, Any]) -> None:
         """重新加载校准文件，可在运行时动态更新参数。"""
@@ -185,7 +193,7 @@ class InsoleModule(IHardware):
             LOG.exception("Failed to start UDP receivers: %s", exc)
             left.stop()
             right.stop()
-            self.publish(Topics.INSOLE_STATUS, event="receiver_error", payload={"message": str(exc)})
+            self.publish(InsoleTopics.STATUS, event="receiver_error", payload={"message": str(exc)})
             raise
         self._receivers.extend([left, right])
 
@@ -235,7 +243,7 @@ class InsoleModule(IHardware):
             if self.connected or not self._running:
                 return
         LOG.warning("Insole hardware did not respond within timeout")
-        self.publish(Topics.INSOLE_STATUS, event="connection_timeout", payload=None)
+        self.publish(InsoleTopics.STATUS, event="connection_timeout", payload=None)
 
     def _on_udp_frame(self, frame: str, port: int) -> None:
         """UDP 回调：处理数据帧并广播解析结果。"""
@@ -249,14 +257,14 @@ class InsoleModule(IHardware):
         with self._lock:
             if not self.connected:
                 self.connected = True
-                self.publish(Topics.INSOLE_STATUS, event="connected", payload={"port": port})
+                self.publish(InsoleTopics.STATUS, event="connected", payload={"port": port})
                 self._cancel_timer("_connection_timer")
             frame_index = self._frame_counter
             self._frame_counter += 1
         if logger and logger.active:
             logger.append(result.is_left, result.pressure_matrix, ts=result.timestamp)
         payload = self._frame_payload(result, frame_index)
-        self.publish(Topics.INSOLE_DATA, frame=payload)
+        self.publish(InsoleTopics.DATA, frame=payload)
 
     def _session_meta(self, config: InsoleConfig) -> Dict[str, Any]:
         """构建会话元信息，便于记录与 UI 展示配置详情。"""
@@ -304,3 +312,15 @@ class InsoleModule(IHardware):
             LOG.warning("左脚校准文件 %s 未加载到有效数据", config.left_csv)
         if config.right_csv and right_count == 0:
             LOG.warning("右脚校准文件 %s 未加载到有效数据", config.right_csv)
+
+
+register_module_topics(
+    "insole",
+    publish={
+        InsoleTopics.STATUS: "鞋垫模块生命周期与连接状态事件",
+        InsoleTopics.DATA: "鞋垫硬件解析后的压力帧数据",
+    },
+    subscribe={
+        InsoleTopics.COMMAND: "控制鞋垫硬件的指令（start/stop 等）",
+    },
+)
