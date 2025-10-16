@@ -4,7 +4,9 @@
 - 采用事件驱动架构，基于 `bus.bus.EventBus` 封装的 `pypubsub` 实现模块间通信。
 - `hardware` 目录存放硬件模块，每个模块实现 `hardware.iHardware.IHardware` 抽象接口，负责自身线程、资源与状态管理。
 - `utils` 目录存放跨模块复用的通用工具（如 UDP 通信）。
-- `main.py` 作为演示入口：启动总线、加载配置、实例化硬件模块、发布启动/停止指令。
+- `main.py` 为正式入口的占位示例；
+- `test_insole.py` 提供鞋垫模块的调试脚本；
+- `script_framework.py` 给出组织多模块运行的脚本模板。
 
 ## 总线主题约定
 - 建议为每个硬件模块保留 `command`、`status`、`data` 三类主题，如 `hardware.<module>.command`。
@@ -38,7 +40,7 @@
   - 根据业务需要订阅 `status`/`data` 主题，实现 UI 展示、日志记录、告警等。
 - 停止阶段：
   - 捕获 `SIGINT/SIGTERM`，依次调用模块的 `shutdown()`，并发布 `system.shutdown` 等广播。
-  - 如果需要自动停止逻辑，可像 `main.py` 一样使用 `threading.Timer` 定时发布 `stop` 指令。
+  - 如果需要自动停止逻辑，可参考 `test_insole.py` 使用 `threading.Timer` 定时发布 `stop` 指令。
 
 ## 目录组织建议
 ```
@@ -51,7 +53,9 @@ hardware/
     module.py             # 对外的 IHardware 实现
 utils/
   communication/          # 网络/串口等通信工具
-main.py                  # 演示入口或最小可运行示例
+main.py                  # 正式程序入口（占位）
+test_insole.py           # 鞋垫模块调试脚本
+script_framework.py      # 脚本结构模板
 ``` 
 - 每个模块内根据职责拆分 `core` 与 `io` 层，有助于后期单元测试与替换实现。
 - 公共常量（如端口、协议字段）集中在模块内的 `constants.py`，避免散落在业务逻辑中。
